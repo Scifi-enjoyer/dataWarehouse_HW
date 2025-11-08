@@ -12,9 +12,9 @@ if parent_dir not in sys.path:
 import config # Import config để lấy DB_FILE
 
 # --- Các Ngưỡng Phân Tích (Đã sửa theo yêu cầu) ---
-STREAK_TARGET = 60       
+STREAK_TARGET = 100       
 LONG_DURATION_SECONDS = 14400 
-HIGH_ENERGY_THRESHOLD_WH = 3000 # Ngưỡng Wh
+HIGH_ENERGY_THRESHOLD_WH = 300 # Ngưỡng Wh
 RECORDS_TO_SUM_ENERGY = 200
 
 def _get_db_connection():
@@ -151,7 +151,7 @@ def analyze_high_consumption():
     Luật 3 (Sửa đổi): Quét dữ liệu hôm nay, tính tổng năng lượng
     của mỗi {RECORDS_TO_SUM_ENERGY} bản ghi.
     """
-    print(f"\n--- 3. Phân tích Tiêu thụ cao (Quét theo từng {RECORDS_TO_SUM_ENERGY} bản ghi) ---")
+    print(f"\n--- 3. Phân tích Tiêu thụ cao  ---")
     recommendations = []
     
     try:
@@ -197,8 +197,6 @@ def analyze_high_consumption():
                     )
                     print(rec)
                     recommendations.append(rec)
-                else:
-                    print(f"       từ {chunk_start_time}: Tổng {energy_chunk_sum:.0f} Wh ")
 
                 # Reset cho chunk tiếp theo
                 record_counter = 0

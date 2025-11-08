@@ -27,10 +27,10 @@ def run_full_etl_and_analysis_job():
     """
     Hàm công việc (job) hoàn chỉnh: ETL (tăng dần) cho 1 CHANNEL rồi Phân tích.
     """
-    print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🚀 Bắt đầu chu trình ETL & Phân tích...")
+    print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🚀 Bắt đầu chu trình ETL")
 
     etl_success = False 
-    print(f"--- Bắt đầu ETL (Tăng dần, 1 Channel) ---")
+    print(f"--- Bắt đầu ETL---")
     
     if not config.CHANNEL_IDS or len(config.CHANNEL_IDS) == 0:
         print("   [!] ❌ LỖI: Không có CHANNEL_IDS nào được định nghĩa trong config.py")
@@ -92,7 +92,7 @@ def analysis_submenu():
         print("====================================")
         print("  1. Phân tích Lãng phí (Đèn bật, không người)")
         # print("  2. Phân tích Bật quá lâu")
-        print("  2. Phân tích Tiêu thụ cao trong ngày")
+        print("  2. Phân tích Tiêu thụ trong ngày")
         print("  3. Chạy tất cả phân tích")
         print("  4. Quay lại Menu chính")
         print("-----------------------------------")
@@ -110,7 +110,7 @@ def analysis_submenu():
         #     input("\nHoàn tất! Bấm Enter để quay lại...")
         elif choice == '2':
             clear_screen()
-            print("[App] 🧐 Đang chạy Phân tích Tiêu thụ cao...")
+            print("[App] 🧐 Đang chạy Phân tích Tiêu thụ ...")
             analyze_high_consumption()
             input("\nHoàn tất! Bấm Enter để quay lại...")
         elif choice == '3':
@@ -126,22 +126,22 @@ def analysis_submenu():
 # ===================================================================
 # PHẦN GIAO DIỆN MENU (Đã sửa)
 # ===================================================================
-def start_scheduler_thread():
-    """
-    Hàm chạy vòng lặp schedule trong một luồng (thread) riêng.
-    """
-    print("\n[Scheduler] ⚙️ Luồng lập lịch đã khởi động...")
+# def start_scheduler_thread():
+#     """
+#     Hàm chạy vòng lặp schedule trong một luồng (thread) riêng.
+#     """
+#     print("\n[Scheduler] ⚙️ Luồng lập lịch đã khởi động...")
     
-    schedule.every(15).seconds.do(run_full_etl_and_analysis_job)
+#     schedule.every(15).seconds.do(run_full_etl_and_analysis_job)
 
-    print("[Scheduler] ⏳ Đang chạy lần đầu tiên ngay bây giờ...")
-    schedule.run_all()
+#     print("[Scheduler] ⏳ Đang chạy lần đầu tiên ngay bây giờ...")
+#     schedule.run_all()
 
-    while not stop_event.is_set():
-        schedule.run_pending()
-        time.sleep(1)
+#     while not stop_event.is_set():
+#         schedule.run_pending()
+#         time.sleep(1)
 
-    print("[Scheduler] 🛑 Luồng lập lịch đã dừng.")
+#     print("[Scheduler] 🛑 Luồng lập lịch đã dừng.")
 
 def main_menu():
     global job_thread
@@ -153,59 +153,59 @@ def main_menu():
         print("  QUẢN LÝ ETL & PHÂN TÍCH DỮ LIỆU   ")
         print("====================================")
 
-        if is_running:
-            print("  Trạng thái: 🟢 ĐANG CHẠY (ETL & Phân tích mỗi 15 giây)")
-        else:
-            print("  Trạng thái: 🔴 ĐÃ DỪNG")
+        # if is_running:
+        #     print("  Trạng thái: 🟢 ĐANG CHẠY ")
+        # else:
+        #     print("  Trạng thái: 🔴 ĐÃ DỪNG")
 
         print("\n--- Lựa chọn ---")
-        print("  1. Bắt đầu chạy tự động (ETL + Phân tích)")
-        print("  2. Dừng chạy tự động")
-        print("  3. Chạy ETL 1 lần ngay bây giờ (ETL + Phân tích)")
-        print("  4. Chạy Phân tích & Đưa lời khuyên (Mở Menu con)") # ✅ Sửa mô tả
-        print("  5. [CẢNH BÁO] Xóa và Tạo lại Database (Hard Reset)")
-        print("  6. Thoát")
+        # print("  1. Bắt đầu chạy tự động (ETL + Phân tích)")
+        # print("  2. Dừng chạy tự động")
+        print("  1. ETL Và nạp dữ liệu vào DWH")
+        print("  2. Phân tích & Đưa lời khuyên (Mở Menu con)") # ✅ Sửa mô tả
+        print("  3. Xóa và Tạo lại Database (Hard Reset)")
+        print("  4. Thoát")
         print("-----------------------------------")
 
         choice = input("Nhập lựa chọn của bạn: ")
 
-        if choice == '1': # Bắt đầu tự động
-            if not is_running:
-                print("\n[App] ⏳ Đang khởi động...")
-                stop_event.clear()
-                job_thread = threading.Thread(target=start_scheduler_thread, daemon=True)
-                job_thread.start()
-                is_running = True
-                print("[App] ✅ Đã BẮT ĐẦU.")
-                time.sleep(2)
-            else:
-                input("[App] ⚠️ Vẫn đang chạy! (Bấm Enter để tiếp tục)")
+        # if choice == '1': # Bắt đầu tự động
+        #     if not is_running:
+        #         print("\n[App] ⏳ Đang khởi động...")
+        #         stop_event.clear()
+        #         job_thread = threading.Thread(target=start_scheduler_thread, daemon=True)
+        #         job_thread.start()
+        #         is_running = True
+        #         print("[App] ✅ Đã BẮT ĐẦU.")
+        #         time.sleep(2)
+        #     else:
+        #         input("[App] ⚠️ Vẫn đang chạy! (Bấm Enter để tiếp tục)")
 
-        elif choice == '2': # Dừng tự động
-            if is_running:
-                print("\n[App] ⏳ Đang dừng...")
-                stop_event.set()
-                job_thread.join()
-                schedule.clear()
-                is_running = False
-                job_thread = None
-                print("[App] ✅ Đã DỪNG.")
-                time.sleep(2)
-            else:
-                input("[App] ⚠️ Vốn dĩ đã dừng! (Bấm Enter để tiếp tục)")
+        # elif choice == '2': # Dừng tự động
+        #     if is_running:
+        #         print("\n[App] ⏳ Đang dừng...")
+        #         stop_event.set()
+        #         job_thread.join()
+        #         schedule.clear()
+        #         is_running = False
+        #         job_thread = None
+        #         print("[App] ✅ Đã DỪNG.")
+        #         time.sleep(2)
+        #     else:
+        #         input("[App] ⚠️ Vốn dĩ đã dừng! (Bấm Enter để tiếp tục)")
 
-        elif choice == '3': # Chạy ETL 1 lần
+        if choice == '1': # Chạy ETL 1 lần
              clear_screen()
-             print("[App] ⚡ Đang chạy ETL & Phân tích 1 lần...")
+             print("[App] ⚡ Đang chạy ETL & Nạp dữ liệu vào DWH...")
              run_full_etl_and_analysis_job()
              input("\nHoàn tất! Bấm Enter để quay lại menu...")
 
-        elif choice == '4': # ✅ GỌI MENU CON
+        elif choice == '2': # ✅ GỌI MENU CON
             analysis_submenu()
 
-        elif choice == '5': # Reset DB
+        elif choice == '3': # Reset DB
             clear_screen()
-            print("[App] 🛑 CẢNH BÁO NGHIÊM TRỌNG 🛑")
+            print("[App] 🛑 CẢNH BÁO 🛑")
             print("Thao tác này sẽ XÓA TẤT CẢ dữ liệu trong database")
             confirm = input("Bạn có CHẮC CHẮN muốn tiếp tục? (nhập 'yes' để xác nhận): ")
             if confirm.lower() == 'yes':
@@ -245,7 +245,7 @@ def main_menu():
             else:
                  input("\nĐã hủy. Bấm Enter để quay lại menu...")
 
-        elif choice == '6': # Thoát
+        elif choice == '4': # Thoát
             if is_running:
                 print("\n[App] ⏳ Đang dừng các luồng trước khi thoát...")
                 stop_event.set()
@@ -266,7 +266,7 @@ if __name__ == "__main__":
 
         main_menu()
     except KeyboardInterrupt:
-        print("\n[App] 🛑 Đã phát hiện Ctrl+C. Đang dọn dẹp và thoát...")
+        print("\n[App] 🛑Đang thoát...")
         if job_thread:
             stop_event.set()
             job_thread.join()

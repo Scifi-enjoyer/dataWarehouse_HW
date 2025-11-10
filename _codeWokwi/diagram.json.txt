@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "author": "iot-ac-system",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp32_1", "top": 62.3, "left": 62.2, "attrs": {} },
+    { "type": "wokwi-pir", "id": "pir_phongkhach", "top": 180, "left": 260, "attrs": {} },
+    { "type": "wokwi-switch", "id": "switch_phongkhach", "top": 260, "left": 260, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led_phongkhach",
+      "top": 260,
+      "left": 360,
+      "attrs": { "color": "yellow" }
+    },
+    { "type": "wokwi-slide-switch", "id": "sw1", "top": 90.8, "left": 204.7, "attrs": {} }
+  ],
+  "connections": [
+    [ "pir_phongkhach:VCC", "esp32_1:3V3", "red", [ "h0" ] ],
+    [ "pir_phongkhach:GND", "esp32_1:GND.1", "black", [ "h0" ] ],
+    [ "pir_phongkhach:OUT", "esp32_1:D4", "blue", [ "h0" ] ],
+    [ "switch_phongkhach:1", "esp32_1:D5", "orange", [ "h0" ] ],
+    [ "switch_phongkhach:2", "esp32_1:GND.2", "black", [ "h0" ] ],
+    [ "led_phongkhach:A", "esp32_1:D2", "yellow", [ "h0" ] ],
+    [ "led_phongkhach:C", "esp32_1:GND.3", "black", [ "h0" ] ],
+    [ "sw1:2", "esp32_1:GND.2", "green", [ "v0" ] ],
+    [ "sw1:1", "esp32_1:D5", "green", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}

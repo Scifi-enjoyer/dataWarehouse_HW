@@ -12,10 +12,9 @@ if parent_dir not in sys.path:
 import config # Import config để lấy DB_FILE
 
 # --- Các Ngưỡng Phân Tích (Đã sửa theo yêu cầu) ---
-STREAK_TARGET = 100       
+STREAK_TARGET = 120       
 LONG_DURATION_SECONDS = 14400 
-HIGH_ENERGY_THRESHOLD_WH = 300 # Ngưỡng Wh
-RECORDS_TO_SUM_ENERGY = 200
+HIGH_ENERGY_THRESHOLD_WH = 100 # Ngưỡng Wh
 
 def _get_db_connection():
     """Hàm helper để kết nối DB"""
@@ -29,7 +28,7 @@ def analyze_waste():
     Luật 1 (Logic mới): Quét các bản ghi TRONG NGÀY HÔM NAY.
     Nếu tìm thấy 30 bản ghi LIÊN TIẾP (state=1, presence=0) thì cảnh báo.
     """
-    print(f"\n--- 1. Phân tích Lãng phí (Quét tìm chuỗi {STREAK_TARGET} bản ghi) ---")
+    print(f"\n--- 1. Phân tích Lãng phí---")
     recommendations = []
     
     try:
@@ -75,8 +74,8 @@ def analyze_waste():
             if bad_streak_counter == STREAK_TARGET:
                 streak_end_time = row.created_at
                 rec = (
-                    f"   ❗️ CẢNH BÁO: Đèn bật không người! "
-                    f"(Từ {streak_start_time} đến {streak_end_time})."
+                    f"   ❗️ CẢNH BÁO: Đèn bật không người ! "
+                    f"Từ {streak_start_time} đến {streak_end_time}."
                 )
                 print(rec)
                 recommendations.append(rec)
@@ -148,10 +147,10 @@ def analyze_waste():
 # ===================================================================
 def analyze_high_consumption():
     """
-    Luật 3 (Sửa đổi): Quét dữ liệu hôm nay, tính tổng năng lượng
-    của mỗi {RECORDS_TO_SUM_ENERGY} bản ghi.
+    Luật 3 (Sửa đổi): Quét dữ liệu hôm nay, tìm các chuỗi state=1.
+    Trong mỗi chuỗi, tìm MAX(energy_wh) và so sánh với ngưỡng.
     """
-    print(f"\n--- 3. Phân tích Tiêu thụ cao  ---")
+    print(f"\n--- 3. Phân tích Tiêu thụ cao (Tìm MAX(energy_wh) trong chuỗi 'state=1') ---")
     recommendations = []
     
     try:
@@ -159,7 +158,7 @@ def analyze_high_consumption():
         
         # Lấy TẤT CẢ bản ghi của ngày hôm nay, sắp xếp từ cũ đến mới
         query = f"""
-        SELECT created_at, energy_wh
+        SELECT created_at, state, energy_wh
         FROM fact_measurement
         WHERE date(created_at, 'localtime') = date('now', 'localtime')
         ORDER BY created_at ASC;
@@ -171,45 +170,72 @@ def analyze_high_consumption():
             print(f"   (Chưa có dữ liệu năng lượng cho ngày hôm nay)")
             return recommendations
 
-        # Biến đếm cho logic quét chunk
-        record_counter = 0
-        energy_chunk_sum = 0
-        chunk_start_time = None
+        list_of_max_energies = []
+        streak_start_time = None
+        current_streak_max_energy = 0.0
+        current_streak_end_time = None
 
+        print(f"   🔎 Đang quét {len(df)} bản ghi MỚI của hôm nay...")
+        
+        # Duyệt qua dữ liệu TỪ CŨ ĐẾN MỚI
         for row in df.itertuples():
-            # Bắt đầu một chunk mới
-            if record_counter == 0:
-                chunk_start_time = row.created_at
-
-            # Thêm năng lượng (bỏ qua NaN/None)
-            if pd.notna(row.energy_wh):
-                energy_chunk_sum += row.energy_wh
+            # (row[0] = Index, row[1] = created_at, row[2] = state, row[3] = energy_wh)
             
-            record_counter += 1
+            if row.state == 1:
+                # Đèn đang BẬT (đang trong chuỗi)
+                if streak_start_time is None:
+                    # Đây là bản ghi BẮT ĐẦU chuỗi
+                    streak_start_time = row.created_at
+                    # Gán giá trị năng lượng đầu tiên (xử lý NaN)
+                    current_streak_max_energy = row.energy_wh if pd.notna(row.energy_wh) else 0.0
+                
+                # Cập nhật max energy và thời gian kết thúc
+                if pd.notna(row.energy_wh):
+                    current_streak_max_energy = max(current_streak_max_energy, row.energy_wh)
+                
+                current_streak_end_time = row.created_at # Luôn cập nhật thời điểm cuối
 
-            # Khi quét đủ 100 bản ghi (hoặc số chunk đã định)
-            if record_counter == RECORDS_TO_SUM_ENERGY:
-                # Kiểm tra ngưỡng
-                if energy_chunk_sum > HIGH_ENERGY_THRESHOLD_WH:
-                    rec = (
-                        f"   ⚡️ CẢNH BÁO: Vượt ngưỡng tiêu thụ {energy_chunk_sum:.0f}/{HIGH_ENERGY_THRESHOLD_WH} Wh "
-                        f"Từ {chunk_start_time} đến {row.created_at}."
-                    )
-                    print(rec)
-                    recommendations.append(rec)
+            else:
+                # Đèn TẮT (state == 0). Đây là lúc kết thúc chuỗi.
+                if streak_start_time is not None:
+                    list_of_max_energies.append(current_streak_max_energy)
+                    if current_streak_max_energy > HIGH_ENERGY_THRESHOLD_WH:
+                        rec = (
+                            f"   ⚡️ CẢNH BÁO: Tiêu thụ vượt ngưỡng! {current_streak_max_energy:.0f} Wh / {HIGH_ENERGY_THRESHOLD_WH}. "
+                            f"từ {streak_start_time} đến {current_streak_end_time}."
+                        )
+                        print(rec)
+                        recommendations.append(rec)
 
-                # Reset cho chunk tiếp theo
-                record_counter = 0
-                energy_chunk_sum = 0
-                chunk_start_time = None
+                # Reset
+                streak_start_time = None
+                current_streak_max_energy = 0.0
+                current_streak_end_time = None
+        
+        # Xử lý Edge Case: Nếu file kết thúc mà đèn VẪN BẬT
+        if streak_start_time is not None:
+            list_of_max_energies.append(current_streak_max_energy)
+            if current_streak_max_energy > HIGH_ENERGY_THRESHOLD_WH:
+                rec = (
+                    f"   ⚡️ CẢNH BÁO: Tiêu thụ vượt ngưỡng! {current_streak_max_energy:.0f} Wh / {HIGH_ENERGY_THRESHOLD_WH}. "
+                    f"Đèn đã bật từ {streak_start_time} "
+                )
+                print(rec)
+                recommendations.append(rec)
+            else:
+                 print(f"      Đèn vẫn đang bật trong ngưỡng cho phép.{current_streak_max_energy:.0f} W.h ")
+
+            # --- ✅ LOGIC MỚI: Tính tổng tiêu thụ trong ngày (Dùng df_total) ---
+        if list_of_max_energies:
+            total_wh_from_streaks = sum(list_of_max_energies)
+        print(f"   🔎 TỔNG TIÊU THỤ ĐIỆN TRONG NGÀY: {total_wh_from_streaks:.0f} Wh")
+
 
     except sqlite3.Error as e:
         print(f"   ❌ Lỗi SQLite khi phân tích tiêu thụ: {e}")
     except Exception as e:
          print(f"   ❌ Lỗi Pandas/Python: {e}")
-
-    total_wh = df['energy_wh'].sum()
-    print(f"   🔎 Tổng năng lượng tiêu thụ: {total_wh:.0f} Wh")    
+        
     return recommendations
 
 # ===================================================================
@@ -235,3 +261,7 @@ def run_all_analyses():
     if not all_recs:
         print("   👍 Tổng kết: Không có cảnh báo hoặc đề xuất nào.")
     return all_recs
+
+if __name__ == '__main__':
+    # Cho phép chạy file này độc lập để test
+    run_all_analyses()

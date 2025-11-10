@@ -40,7 +40,7 @@ def create_database_schema():
     conn.commit()
     conn.close()
 
-    print(f"✅ Mini Data Warehouse (Đã đơn giản hóa) created at: {db_path}")
+    print(f"✅ Mini Data Warehouse created at: {db_path}")
 
 if __name__ == "__main__":
     print("Đang chạy create.py độc lập để tạo schema...")
